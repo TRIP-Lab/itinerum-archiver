@@ -29,7 +29,7 @@ Itinerum Archiver (`archiver/archiver.py`) is intended to be scheduled as a cron
     "inactivity_date": "2018-06-01T00:00:00Z",
     "output_dir": "./output",
     "receiver_email": {
-        "address": "email@example.com",
+        "address": "email@example.com"
     },
     "sender_email": {
         "address": "email@example.com",

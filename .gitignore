@@ -3,3 +3,4 @@ archiver/output/
 archiver/config.json
 *.pyc
 archiver/exports.sqlite
+www/status.html

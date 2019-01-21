@@ -154,10 +154,12 @@ class ItinerumDatabase(PostgreSQLDatabase):
             FROM mobile_coordinates
             WHERE survey_id={survey_id}
             AND timestamp >= '{init_cutoff}'
+            AND timestamp <= '{now_cutoff}'
             ORDER BY timestamp DESC
             LIMIT 1;
         '''.format(
             init_cutoff=HARDCODED_SERVER_START_TIME,
+            now_cutoff=datetime.utcnow(),
             survey_id=survey_id
         )
         self._query(sql)

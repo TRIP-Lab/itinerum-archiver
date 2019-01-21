@@ -33,10 +33,17 @@ def generate_html():
     active_statuses = []
     for row in export_db.fetch_active_statuses():
         name, start, end = row
+        start_UTC = None
+        if start:
+            start_UTC = datetime.utcfromtimestamp(start).isoformat()
+        end_UTC = None
+        if end:
+            end_UTC = datetime.utcfromtimestamp(end).isoformat()
+
         active_statuses.append({
             'survey_name': name,
-            'survey_start': datetime.utcfromtimestamp(start).isoformat(),
-            'survey_last_update': datetime.utcfromtimestamp(end).isoformat()
+            'survey_start': start_UTC,
+            'survey_last_update': end_UTC
         })
 
     with open(WEBUI_TEMPLATE, 'r') as tmpl_f:

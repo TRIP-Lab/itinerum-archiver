@@ -285,7 +285,7 @@ class ItinerumDatabase(PostgreSQLDatabase):
         return start
 
 
-class SQLiteDatabase(object):
+class ExportsDatabase(object):
 
     def __init__(self, filepath):
         self._db_conn = sqlite3.connect(filepath)
@@ -298,6 +298,17 @@ class SQLiteDatabase(object):
         if not params:
             params = []
         return self._db_cur.execute(query, params)
+
+    def create_active_table(self):
+        sql = '''
+            CREATE TABLE IF NOT EXISTS active (
+                survey_name TEXT UNIQUE,
+                survey_start INTEGER,
+                survey_last_update INTEGER
+            );
+        '''
+        self._query(sql)
+        self._db_conn.commit()
 
     def create_exports_table(self):
         sql = '''
@@ -316,11 +327,36 @@ class SQLiteDatabase(object):
         self._query(sql)
         self._db_conn.commit()
 
-    def upsert(self, cols, record):
-        self.create_exports_table()
-        sql = '''REPLACE INTO exports ({cols}) VALUES ({vals});'''.format(
-            cols=', '.join([c for c in cols]),
+    def fetch_active_statuses(self):
+        sql = '''
+            SELECT survey_name, survey_start, survey_last_update
+            FROM active;
+        '''
+        self._query(sql)
+        return self._db_cur.fetchall()
+
+    def fetch_archived_statuses(self):
+        sql = '''
+            SELECT timestamp, survey_name, survey_start, survey_end
+            FROM exports;
+        '''
+        self._query(sql)
+        return self._db_cur.fetchall()
+
+    def upsert(self, table, cols, record):
+        sql = '''REPLACE INTO {table} ({cols}) VALUES ({vals});'''.format(
+            table=table,
+            cols=', '.join(cols),
             vals=', '.join(['?'] * len(cols))
         )
         self._query(sql, record)
+        self._db_conn.commit()
+
+    def upsert_many(self, table, cols, records):
+        sql = '''REPLACE INTO {table} ({cols}) VALUES ({vals});'''.format(
+            table=table,
+            cols=', '.join(cols),
+            vals=', '.join(['?'] * len(cols))
+        )
+        self._db_cur.executemany(sql, records)
         self._db_conn.commit()

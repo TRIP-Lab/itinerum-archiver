@@ -1,0 +1,11 @@
+a:focus {
+	box-shadow: unset;
+}
+
+.tab-content {
+	display: none;
+}
+
+.tab-content.active {
+	display: inherit;
+}

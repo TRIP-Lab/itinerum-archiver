@@ -12,6 +12,7 @@ import csv_formatters
 import database
 import emailer
 import fileio
+import webpage
 
 
 ## GLOBALS
@@ -163,6 +164,10 @@ def main():
 
     cfg = load_config(CFG_FN)
     source_db = database.ItinerumDatabase(**cfg['source_db'])
+    exports_sqlite_fp = './exports.sqlite'
+    exports_db = database.ExportsDatabase(exports_sqlite_fp)
+    exports_db.create_active_table()
+    exports_db.create_exports_table()
 
     # create output directory
     if not os.path.exists(cfg['output_dir']):
@@ -251,8 +256,6 @@ def main():
         #         survey start, survey end, and total records included in export as
         #         well as datetime of completed export
         logger.info('Update master database with export record')
-        master_sqlite_fp = './exports.sqlite'
-        export_db = database.SQLiteDatabase(master_sqlite_fp)
         record_cols = ['timestamp', 'survey_name', 'survey_start', 'survey_end']
         record_cols += ['count_' + t for t in copy_tables]
         
@@ -264,7 +267,7 @@ def main():
             end_time = int(end_time.timestamp())
         record = [run_timestamp, survey_name, start_time, end_time]
         record += [dest_db.count(t) for t in copy_tables]
-        export_db.upsert(record_cols, record)
+        exports_db.upsert('exports', record_cols, record)
         email_records.append(record)
 
         # step 7: compress .csv dir and .sqlite database
@@ -274,7 +277,10 @@ def main():
 
         # step 8: delete backed-up survey rows and relevant indexes from database
         logger.info('Delete archived survey records from source database')
-        source_db.delete_survey(survey_id)
+        if cfg['debug'] is False:
+            source_db.delete_survey(survey_id)
+        else:
+            break
 
     # step 9: send email with successful exports details and link to status webpage
     logger.info('Send notification of {num} exported surveys to {email}'.format(
@@ -283,9 +289,26 @@ def main():
                          sender_cfg=cfg['sender_email'],
                          records=email_records)
 
-    # step 10: vacuum database to reclaim disk space
+    # step 10: generate survey export status webpage
+    active_surveys = filter(lambda row: row['last_created_at'] >= cfg['inactivity_date'],
+                            surveys_latest_activity)
+    active_cols = ['survey_name', 'survey_start', 'survey_last_update']
+    active_rows = []
+    for survey_id, survey_name, _ in active_surveys:
+        start_time = source_db.start_time(survey_id)
+        if start_time:
+            start_time = int(start_time.timestamp())
+        end_time = source_db.end_time(survey_id)
+        if end_time:
+            end_time = int(end_time.timestamp())
+        active_rows.append((survey_name, start_time, end_time))
+    exports_db.upsert_many('active', active_cols, active_rows)
+    webpage.generate_html()
+
+    # step 11: vacuum database to reclaim disk space
     logger.info('Vacuum database to free space from deleted records')
-    source_db.vacuum()
+    if cfg['debug'] is False:
+        source_db.vacuum()
 
 if __name__ == '__main__':
     main()

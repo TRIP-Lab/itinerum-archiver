@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Itinerum Archiver Status</title>
+        <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+        <link rel="stylesheet" href="custom.css">
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha256-3edrmyuQ0w65f8gfBsqowzjJe2iM6n0nKciPUp8y+7E=" crossorigin="anonymous"></script>
+        <script src="https://moment.github.io/luxon/global/luxon.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Title -->
+            <div class="columns">
+                <div class="column col-12 text-center">
+                    <h3>Itinerum Archive Status</h3>
+                </div>
+            </div>
+
+            <!-- Tab navigation -->
+            <ul class="tab tab-block">
+                <li class="tab-item active" data-tab="tab-1">
+                    <a href="#">Archived</a>
+                </li>
+                <li class="tab-item" data-tab="tab-2">
+                    <a href="#">Active</a>
+                </li>                
+            </ul>
+
+            <!-- Archived surveys tab content -->
+            <div id="tab-1" class="columns tab-content active">
+                <div class="column col-12">
+                    <table class="table table-hover">
+                        <thead>
+                            <th>Survey name</th>
+                            <th>Start time (UTC)</th>
+                            <th>End time (UTC)</th>
+                            <th>Status</th>
+                            <th>Archive time (UTC)</th>
+                            <th>Link</th>
+                        </thead>
+
+                        <tbody>
+                            {% for item in archived_surveys %}
+                            <tr>
+                                <td>{{item.survey_name}}</td>
+                                <td>{{item.survey_start}}</td>
+                                <td>{{item.survey_end}}</td>
+                                <td>{{item.archive_status}}</td>
+                                <td>{{item.archive_time}}</td>
+                                <td>{{item.archive_link}}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active surveys tab content -->
+            <div id="tab-2" class="columns tab-content">
+                <div class="column col-12">
+                    <table class="table table-hover">
+                        <thead>
+                            <th>Survey Name</th>
+                            <th>Start time (UTC)</th>
+                            <th>Last update (UTC)</th>
+                        </thead>
+
+                        <tbody>
+                            {% for item in active_surveys %}
+                            <tr>
+                                <td>{{ item.survey_name }}</td>
+                                <td>{{ item.survey_start }}</td>
+                                <td>{{ item.survey_last_update }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            // handle hiding/displaying content on tab navigation
+            $(document).ready(function() {
+                $('ul.tab li').click(function() {
+                    var tabId = $(this).attr('data-tab');
+                    $('ul.tab li').removeClass('active');
+                    $('.tab-content').removeClass('active');
+
+                    $(this).addClass('active');
+                    $('#' + tabId).addClass('active');
+                });
+            });
+        </script>
+    </body>
+</html>

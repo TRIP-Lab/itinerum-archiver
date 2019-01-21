@@ -37,7 +37,8 @@ Itinerum Archiver (`archiver/archiver.py`) is intended to be scheduled as a cron
         "port": 587,
         "tls": true,
         "password": "sender_email_password"
-    }
+    },
+    "debug": true
 }
 ```
 

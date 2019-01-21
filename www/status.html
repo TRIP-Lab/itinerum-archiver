@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Itinerum Archiver Status</title>
+        <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+        <link rel="stylesheet" href="custom.css">
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha256-3edrmyuQ0w65f8gfBsqowzjJe2iM6n0nKciPUp8y+7E=" crossorigin="anonymous"></script>
+        <script src="https://moment.github.io/luxon/global/luxon.min.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <!-- Title -->
+            <div class="columns">
+                <div class="column col-12 text-center">
+                    <h3>Itinerum Archive Status</h3>
+                </div>
+            </div>
+
+            <!-- Tab navigation -->
+            <ul class="tab tab-block">
+                <li class="tab-item active" data-tab="tab-1">
+                    <a href="#">Archived</a>
+                </li>
+                <li class="tab-item" data-tab="tab-2">
+                    <a href="#">Active</a>
+                </li>                
+            </ul>
+
+            <!-- Archived surveys tab content -->
+            <div id="tab-1" class="columns tab-content active">
+                <div class="column col-12">
+                    <table class="table table-hover">
+                        <thead>
+                            <th>Survey name</th>
+                            <th>Start time (UTC)</th>
+                            <th>End time (UTC)</th>
+                            <th>Status</th>
+                            <th>Archive time (UTC)</th>
+                            <th>Link</th>
+                        </thead>
+
+                        <tbody>
+                            
+                            <tr>
+                                <td>cuf4</td>
+                                <td>2017-05-17T15:33:18</td>
+                                <td>2017-05-17T15:33:18</td>
+                                <td>backups created</td>
+                                <td>2019-01-21T17:05:26</td>
+                                <td></td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active surveys tab content -->
+            <div id="tab-2" class="columns tab-content">
+                <div class="column col-12">
+                    <table class="table table-hover">
+                        <thead>
+                            <th>Survey Name</th>
+                            <th>Start time (UTC)</th>
+                            <th>Last update (UTC)</th>
+                        </thead>
+
+                        <tbody>
+                            
+                            <tr>
+                                <td>ut1</td>
+                                <td>2017-06-16T22:43:53</td>
+                                <td>2018-10-30T22:31:10</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>test</td>
+                                <td>2017-11-02T21:29:08</td>
+                                <td>2018-06-22T03:02:15</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>testppp</td>
+                                <td>2018-06-08T19:40:39</td>
+                                <td>2018-07-03T16:57:34</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>cu7</td>
+                                <td>2017-09-20T00:28:55</td>
+                                <td>2018-07-12T19:51:14</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>gaps</td>
+                                <td>2018-04-30T15:20:39</td>
+                                <td>2018-07-03T20:43:55</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>cuf7</td>
+                                <td>2017-05-19T20:19:16</td>
+                                <td>2018-07-21T01:28:17</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>itinerum</td>
+                                <td>2017-06-14T13:28:42</td>
+                                <td>2018-07-23T20:50:06</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>cu5</td>
+                                <td>2017-09-08T13:53:35</td>
+                                <td>2018-07-20T20:37:30</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>uwtest1</td>
+                                <td>2018-07-23T15:20:18</td>
+                                <td>2018-07-24T15:50:25</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>fastt2</td>
+                                <td>2018-08-03T21:58:25</td>
+                                <td>2018-08-03T22:04:25</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>hero</td>
+                                <td>2018-06-06T15:59:53</td>
+                                <td>2018-08-13T23:53:55</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>laps</td>
+                                <td>2017-05-22T17:43:25</td>
+                                <td>2018-07-31T21:55:43</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>nikhal</td>
+                                <td>2018-05-16T02:32:50</td>
+                                <td>2018-09-06T10:49:11</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>cfsf</td>
+                                <td>2017-11-21T15:13:35</td>
+                                <td>2018-09-22T17:43:57</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>fastt</td>
+                                <td>2018-05-23T18:54:02</td>
+                                <td>2018-10-04T16:24:32</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>uwtest</td>
+                                <td>2018-07-24T13:04:40</td>
+                                <td>2018-10-12T19:41:36</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtlte2018cm</td>
+                                <td>2049-09-23T08:13:03</td>
+                                <td>2049-10-17T20:23:53</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtltf2018cm</td>
+                                <td>2049-09-22T22:24:57</td>
+                                <td>2049-11-01T18:25:32</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtlte</td>
+                                <td>2017-09-16T00:30:20</td>
+                                <td>2018-10-18T21:36:15</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>kyle</td>
+                                <td>2018-07-04T15:46:44</td>
+                                <td>2018-10-23T20:38:57</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>citylogger</td>
+                                <td>2017-10-04T18:23:17</td>
+                                <td>2018-10-18T02:33:53</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>noprompts</td>
+                                <td>2017-06-01T16:03:34</td>
+                                <td>2018-10-26T12:19:50</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>cuf10</td>
+                                <td>2017-08-31T14:49:28</td>
+                                <td>2018-10-30T22:44:06</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtltf</td>
+                                <td>2017-09-13T08:12:10</td>
+                                <td>2038-01-01T20:00:14</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtltf2018ios</td>
+                                <td>2018-09-21T03:45:12</td>
+                                <td>2018-11-05T17:02:16</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtlte2018</td>
+                                <td>2018-09-18T13:39:50</td>
+                                <td>2018-10-31T10:13:48</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtltf2018</td>
+                                <td>2018-09-22T12:42:52</td>
+                                <td>2018-11-04T19:54:00</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>mtlte2018ios</td>
+                                <td>2018-09-19T04:07:40</td>
+                                <td>2018-11-05T16:56:19</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            // handle hiding/displaying content on tab navigation
+            $(document).ready(function() {
+                $('ul.tab li').click(function() {
+                    var tabId = $(this).attr('data-tab');
+                    $('ul.tab li').removeClass('active');
+                    $('.tab-content').removeClass('active');
+
+                    $(this).addClass('active');
+                    $('#' + tabId).addClass('active');
+                });
+            });
+        </script>
+    </body>
+</html>

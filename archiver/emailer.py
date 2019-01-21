@@ -16,8 +16,7 @@ def send(recipient, sender_cfg, msg):
         smtp.login(sender_cfg['address'], sender_cfg['password'])
         smtp.sendmail(sender_cfg['address'], recipient, msg.as_string())
 
-def send_message(recipient, sender_cfg, records):
-    export_timestamp = records[0][0]
+def send_message(export_timestamp, recipient, sender_cfg, records):
     export_timestamp_UTC = datetime.utcfromtimestamp(export_timestamp).isoformat()
 
     table = PrettyTable()
@@ -39,6 +38,14 @@ def send_message(recipient, sender_cfg, records):
         'Backups created for:',
         str(table),
     ]
+
+    if not records:
+        lines = [
+            'Inactive survey archiver ran at: {ts}'.format(ts=export_timestamp_UTC),
+            '',
+            'No inactive surveys to backup.'
+        ]
+
     msg = MIMEText('\n'.join(lines))
     msg['Subject'] = 'Itinerum data-archiver run: {ts}'.format(ts=export_timestamp_UTC)
     msg['From'] = sender_cfg['address']

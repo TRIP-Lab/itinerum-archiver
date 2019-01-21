@@ -285,7 +285,8 @@ def main():
     # step 9: send email with successful exports details and link to status webpage
     logger.info('Send notification of {num} exported surveys to {email}'.format(
         num=len(email_records), email=cfg['receiver_email']['address']))
-    emailer.send_message(recipient=cfg['receiver_email']['address'],
+    emailer.send_message(export_timestamp=run_timestamp,
+                         recipient=cfg['receiver_email']['address'],
                          sender_cfg=cfg['sender_email'],
                          records=email_records)
 

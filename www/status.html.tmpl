@@ -47,7 +47,11 @@
                                 <td>{{item.survey_end}}</td>
                                 <td>{{item.archive_status}}</td>
                                 <td>{{item.archive_time}}</td>
-                                <td>{{item.archive_link}}</td>
+                                {% if item.archive_link %}
+                                    <td><a href="{{item.archive_link}}">{{item.archive_link}}</a></td>
+                                {% else %}
+                                    <td>{{item.archive_link}}</td>
+                                {% endif %}
                             </tr>
                             {% endfor %}
                         </tbody>

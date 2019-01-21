@@ -4,3 +4,4 @@ archiver/config.json
 *.pyc
 archiver/exports.sqlite
 www/status.html
+cold-storage/temp/

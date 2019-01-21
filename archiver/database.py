@@ -324,7 +324,8 @@ class ExportsDatabase(object):
                 count_mobile_survey_responses INTEGER,
                 count_mobile_coordinates INTEGER,
                 count_mobile_prompt_responses INTEGER,
-                count_mobile_cancelled_prompt_responses INTEGER
+                count_mobile_cancelled_prompt_responses INTEGER,
+                s3_uri TEXT
             );
         '''
         self._query(sql)
@@ -340,7 +341,7 @@ class ExportsDatabase(object):
 
     def fetch_archived_statuses(self):
         sql = '''
-            SELECT timestamp, survey_name, survey_id, survey_start, survey_end
+            SELECT timestamp, survey_name, survey_id, survey_start, survey_end, s3_uri
             FROM exports;
         '''
         self._query(sql)

@@ -14,20 +14,28 @@ def write_webpage(page_html):
         html_f.write(page_html)
 
 
-def generate_html():
-    exports_sqlite_fp = './exports.sqlite'
+def generate_html(exports_sqlite_fp=None):
+    if not exports_sqlite_fp:
+        exports_sqlite_fp = './exports.sqlite'
     exports_db = database.ExportsDatabase(exports_sqlite_fp)
 
     archived_statuses = []
     for row in exports_db.fetch_archived_statuses():
-        archive_time, _id, name, start, end = row
+        archive_time, name, _id, start, end, s3_uri = row
+        start_UTC = None
+        if start:
+            start_UTC = datetime.utcfromtimestamp(start).isoformat()
+        end_UTC = None
+        if end:
+            end_UTC = datetime.utcfromtimestamp(end).isoformat()
+
         archived_statuses.append({
             'survey_name': name,
-            'survey_start': datetime.utcfromtimestamp(start).isoformat(),
-            'survey_end': datetime.utcfromtimestamp(end).isoformat(),
-            'archive_status': 'backups created',
+            'survey_start': start_UTC,
+            'survey_end': end_UTC,
+            'archive_status': 'archived' if s3_uri else 'backups created',
             'archive_time': datetime.utcfromtimestamp(archive_time).isoformat(),
-            'link': None
+            'archive_link': s3_uri
         })
 
     active_statuses = []

@@ -15,12 +15,12 @@ def write_webpage(page_html):
 
 
 def generate_html():
-    master_sqlite_fp = './exports.sqlite'
-    export_db = database.ExportsDatabase(master_sqlite_fp)
+    exports_sqlite_fp = './exports.sqlite'
+    exports_db = database.ExportsDatabase(exports_sqlite_fp)
 
     archived_statuses = []
-    for row in export_db.fetch_archived_statuses():
-        archive_time, name, start, end = row
+    for row in exports_db.fetch_archived_statuses():
+        archive_time, _id, name, start, end = row
         archived_statuses.append({
             'survey_name': name,
             'survey_start': datetime.utcfromtimestamp(start).isoformat(),
@@ -31,7 +31,7 @@ def generate_html():
         })
 
     active_statuses = []
-    for row in export_db.fetch_active_statuses():
+    for row in exports_db.fetch_active_statuses():
         name, start, end = row
         start_UTC = None
         if start:

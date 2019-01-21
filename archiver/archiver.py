@@ -256,7 +256,7 @@ def main():
         #         survey start, survey end, and total records included in export as
         #         well as datetime of completed export
         logger.info('Update master database with export record')
-        record_cols = ['timestamp', 'survey_name', 'survey_start', 'survey_end']
+        record_cols = ['timestamp', 'survey_id', 'survey_name', 'survey_start', 'survey_end']
         record_cols += ['count_' + t for t in copy_tables]
         
         start_time = source_db.start_time(survey_id)
@@ -265,7 +265,7 @@ def main():
         end_time = source_db.end_time(survey_id)
         if end_time:
             end_time = int(end_time.timestamp())
-        record = [run_timestamp, survey_name, start_time, end_time]
+        record = [run_timestamp, survey_id, survey_name, start_time, end_time]
         record += [dest_db.count(t) for t in copy_tables]
         exports_db.upsert('exports', record_cols, record)
         email_records.append(record)

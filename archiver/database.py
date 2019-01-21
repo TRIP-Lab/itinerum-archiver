@@ -317,6 +317,7 @@ class ExportsDatabase(object):
             CREATE TABLE IF NOT EXISTS exports (
                 timestamp INTEGER,
                 survey_name TEXT UNIQUE,
+                survey_id INTEGER id,
                 survey_start INTEGER,
                 survey_end INTEGER,
                 count_mobile_users INTEGER,
@@ -339,7 +340,7 @@ class ExportsDatabase(object):
 
     def fetch_archived_statuses(self):
         sql = '''
-            SELECT timestamp, survey_name, survey_start, survey_end
+            SELECT timestamp, survey_name, survey_id, survey_start, survey_end
             FROM exports;
         '''
         self._query(sql)

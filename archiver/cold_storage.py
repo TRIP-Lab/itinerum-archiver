@@ -55,14 +55,13 @@ def create_single_file_archive(file_groups):
     return archives
 
 
-def upload_s3(archives):
+def upload_s3(cfg, archives):
     s3 = boto3.resource('s3')
     for survey_name, archive_fn, archive_fp in archives:
         s3.meta.client.upload_file(archive_fp, 'itinerum-cold-storage', archive_fn)
-        logger.info('Push {fn} archive to S3 complete'.format(fn=archive_fn))
 
         # update exports 0db with link
-        base_s3_uri = 'https://s3.ca-central-1.amazonaws.com/itinerum-cold-storage'
+        base_s3_uri = cfg['s3_bucket']
         s3_uri = '{base}/{key}'.format(base=base_s3_uri, key=archive_fn)
         sql = '''UPDATE exports
                  SET s3_uri='{uri}'
@@ -72,7 +71,7 @@ def upload_s3(archives):
     exports_db._db_conn.commit()
 
 
-def push_archives_to_s3():
+def push_archives_to_s3(cfg):
     # create output temp dir if it doesnt exist
     if not os.path.exists(WORKING_DATA_DIR):
         os.mkdir(WORKING_DATA_DIR)
@@ -80,7 +79,7 @@ def push_archives_to_s3():
     survey_names = fetch_surveys_to_push()
     file_groups = create_archive_file_groups(survey_names)
     archives = create_single_file_archive(file_groups)
-    upload_s3(archives)
+    upload_s3(cfg, archives)
 
     # clean-up temp data dir
     shutil.rmtree(WORKING_DATA_DIR)

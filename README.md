@@ -38,7 +38,8 @@ Itinerum Archiver (`archiver/archiver.py`) is intended to be scheduled as a cron
         "tls": true,
         "password": "sender_email_password"
     },
-    "debug": true
+    "debug": true,
+    "s3_bucket": "https://s3.{aws-region}.amazonaws.com/{cold-storage-bucket-name}"
 }
 ```
 

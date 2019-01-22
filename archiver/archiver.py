@@ -8,6 +8,7 @@ import shutil
 import time
 import unicodedata
 
+import cold_storage
 import csv_formatters
 import database
 import emailer
@@ -282,15 +283,8 @@ def main():
         else:
             break
 
-    # step 9: send email with successful exports details and link to status webpage
-    logger.info('Send notification of {num} exported surveys to {email}'.format(
-        num=len(email_records), email=cfg['receiver_email']['address']))
-    emailer.send_message(export_timestamp=run_timestamp,
-                         recipient=cfg['receiver_email']['address'],
-                         sender_cfg=cfg['sender_email'],
-                         records=email_records)
-
-    # step 10: generate survey export status webpage
+    # step 9: record active surveys information in exports db
+    logger.info('Record active surveys information in exports db')
     active_surveys = filter(lambda row: row['last_created_at'] >= cfg['inactivity_date'],
                             surveys_latest_activity)
     active_cols = ['survey_name', 'survey_start', 'survey_last_update']
@@ -304,9 +298,24 @@ def main():
             end_time = int(end_time.timestamp())
         active_rows.append((survey_name, start_time, end_time))
     exports_db.upsert_many('active', active_cols, active_rows)
+
+    # step 10: push newly created archives to s3
+    logger.info('Push .zip archives to S3 cold storage')
+    cold_storage.push_archives_to_s3()
+
+    # step 11: generate archive status webpage
+    logger.info('Generate webpage with exports status table')
     webpage.generate_html()
 
-    # step 11: vacuum database to reclaim disk space
+    # step 10: send email with successful exports details and link to status webpage
+    logger.info('Send notification of {num} exported surveys to {email}'.format(
+        num=len(email_records), email=cfg['receiver_email']['address']))
+    emailer.send_message(export_timestamp=run_timestamp,
+                         recipient=cfg['receiver_email']['address'],
+                         sender_cfg=cfg['sender_email'],
+                         records=email_records)
+
+    # step 13: vacuum database to reclaim disk space
     logger.info('Vacuum database to free space from deleted records')
     if cfg['debug'] is False:
         source_db.vacuum()

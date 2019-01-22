@@ -301,13 +301,13 @@ def main():
 
     # step 10: push newly created archives to s3
     logger.info('Push .zip archives to S3 cold storage')
-    cold_storage.push_archives_to_s3()
+    cold_storage.push_archives_to_s3(cfg)
 
     # step 11: generate archive status webpage
     logger.info('Generate webpage with exports status table')
     webpage.generate_html()
 
-    # step 10: send email with successful exports details and link to status webpage
+    # step 12: send email with successful exports details and link to status webpage
     logger.info('Send notification of {num} exported surveys to {email}'.format(
         num=len(email_records), email=cfg['receiver_email']['address']))
     emailer.send_message(export_timestamp=run_timestamp,

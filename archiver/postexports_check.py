@@ -21,7 +21,9 @@ def check_records(db, _id, survey_name):
         try:
             assert result == 0
         except AssertionError:
+            logging.info('Records exist for: {name}'.format(name=survey_name))
             logging.info(sql)
+            logging.info('Exiting...')
             sys.exit(1)        
 
     id_tables = [
@@ -63,7 +65,7 @@ def main():
     exports_db = database.ExportsDatabase(exports_sqlite_fp)
     source_db = database.ItinerumDatabase(**cfg['source_db'])    
 
-    for export_timestamp, name, _id, start, end in exports_db.fetch_archived_statuses():
+    for _, name, _id, start, end, _ in exports_db.fetch_archived_statuses():
         logger.info('Checking successful delete of {name} survey records...'.format(
             name=name))
         check_records(source_db, _id, name)

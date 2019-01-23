@@ -22,7 +22,7 @@ def send_message(export_timestamp, recipient, sender_cfg, records):
     table = PrettyTable()
     table.field_names = ['survey', 'start time (UTC)', 'end time (UTC)']
     for record in records:
-        survey_name, start_time, end_time = record[1], record[3], record[4]
+        survey_name, start_time, end_time = record[2], record[3], record[4]
         start_time_UTC = None
         if start_time:
             start_time_UTC = datetime.utcfromtimestamp(start_time).isoformat()

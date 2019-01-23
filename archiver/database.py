@@ -145,6 +145,10 @@ class ItinerumDatabase(PostgreSQLDatabase):
             id=survey_id)
         self._query(sql6)
 
+        multi_idx_name = 'survey{id}_multi_idx'.format(id=survey_id)
+        sql7 = '''DROP INDEX {name};'''.format(name=multi_idx_name)
+        self._query(sql7)
+
         self._db_conn.commit()
 
 

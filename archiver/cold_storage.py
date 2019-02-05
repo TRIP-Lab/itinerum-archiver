@@ -61,7 +61,7 @@ def upload_s3(cfg, archives):
         s3.meta.client.upload_file(archive_fp, 'itinerum-cold-storage', archive_fn)
 
         # update exports 0db with link
-        base_s3_uri = cfg['s3_bucket']
+        base_s3_uri = cfg['s3']['bucket']
         s3_uri = '{base}/{key}'.format(base=base_s3_uri, key=archive_fn)
         sql = '''UPDATE exports
                  SET s3_uri='{uri}'

@@ -1,0 +1,14 @@
+{
+    "source_db": {
+        "host": "localhost",
+        "port": 5432,
+        "user": "kyle",
+        "password": "kyle",
+        "dbname": "aws_itinerum"
+    },
+    "archive": {
+        "survey_name": "cfsf",
+        "cutoff_date": "2018-09-01T00:00:00Z",
+        "output_dir": "../output"
+    }
+}

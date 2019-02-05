@@ -28,8 +28,19 @@ def load_config(cfg_fn):
     cfg = None
     with open(cfg_fn, 'r') as cfg_f:
         cfg = json.load(cfg_f)
-        cfg['inactivity_date'] = dateutil.parser.parse(cfg['inactivity_date'])
+        if cfg['archive']['type'] == 'inactivity_date':
+            cfg['archive']['inactivity_date'] = \
+                dateutil.parser.parse(cfg['archive']['inactivity_date'])
     return cfg
+
+
+def filter_inactive_surveys(cfg, surveys_latest_activity):
+    if cfg['archive']['type'] == 'inactivity_date':
+        return filter(lambda row: row['last_created_at'] < cfg['archive']['inactivity_date'],
+                      surveys_latest_activity)
+    if cfg['archive']['type'] == 'survey_name':
+        return filter(lambda row: row['name'] == cfg['archive']['survey_name'],
+                      surveys_latest_activity)
 
 
 def copy_psql_sqlite(source_db, dest_db, table_name, survey_id, json_cols=None, float_cols=None):
@@ -109,7 +120,6 @@ def dump_csv_coordinates(source_db, csv_dir, survey_id, survey_name):
 
 
 def dump_csv_prompts(source_db, csv_dir, survey_id, survey_name):
-    timestamp_cols = ['displayed_at', 'recorded_at', 'edited_at']
     header = ['uuid', 'prompt_uuid', 'prompt_num', 'response', 'displayed_at_UTC',
               'displayed_at_epoch', 'recorded_at_UTC', 'recorded_at_epoch',
               'edited_at_UTC', 'edited_at_epoch', 'latitude', 'longitude']
@@ -171,28 +181,26 @@ def main():
     exports_db.create_exports_table()
 
     # create output directory
-    if not os.path.exists(cfg['output_dir']):
-        logger.info('Creating output directory: %s' % cfg['output_dir'])
-        os.mkdir(cfg['output_dir'])
+    if not os.path.exists(cfg['archive']['output_dir']):
+        logger.info('Creating output directory: %s' % cfg['archive']['output_dir'])
+        os.mkdir(cfg['archive']['output_dir'])
 
     # step 1: fetch latest users for each survey and write to a timestamped
     #         .csv file
-    logger.info('Finding most recent user by survey: %s' % cfg['output_dir'])
+    logger.info('Finding most recent user by survey: %s' % cfg['archive']['output_dir'])
     surveys_latest_activity = source_db.latest_signups_by_survey()
     latest_signups_fn = 'surveys-latest_users.csv'
-    latest_signups_fp = os.path.join(cfg['output_dir'], latest_signups_fn)
+    latest_signups_fp = os.path.join(cfg['archive']['output_dir'], latest_signups_fn)
     header = ['survey id', 'survey name', 'last sign-up']
     fileio.write_csv(latest_signups_fp, header, surveys_latest_activity)
 
     # step 2: filter for surveys that have not been updated since config
     #         inactivity date
-    inactive_surveys = filter(lambda row: row['last_created_at'] < cfg['inactivity_date'],
-                              surveys_latest_activity)
-
+    inactive_surveys = filter_inactive_surveys(cfg, surveys_latest_activity)
     copy_tables = ['mobile_users', 'mobile_survey_responses', 'mobile_coordinates',
                    'mobile_prompt_responses', 'mobile_cancelled_prompt_responses']
     email_records = []
-    for survey_id, survey_name, survey_last_user in inactive_surveys:
+    for survey_id, survey_name, _ in inactive_surveys:
         # coerce accented survey_name to pure ASCII version appending
         # an underscore after any previously accented characters
         nfkd_form = unicodedata.normalize('NFKD', survey_name)
@@ -202,7 +210,7 @@ def main():
 
         # step 3: archive inactive surveys to .sqlite
         dest_sqlite_fn = '{}.sqlite'.format(survey_name)
-        dest_sqlite_fp = os.path.join(cfg['output_dir'], dest_sqlite_fn)
+        dest_sqlite_fp = os.path.join(cfg['archive']['output_dir'], dest_sqlite_fn)
         if os.path.exists(dest_sqlite_fp):
             os.remove(dest_sqlite_fp)
         logger.info('Export {survey} to {fn}'.format(survey=survey_name,
@@ -224,7 +232,7 @@ def main():
         # step 4: copy inactive surveys to temp postgresql tables, dump
         #         inactive surveys to .psql files and drop temp tables
         psql_dump_fn = '{survey}.psql.gz'.format(survey=survey_name)
-        psql_dump_fp = os.path.join(cfg['output_dir'], psql_dump_fn)
+        psql_dump_fp = os.path.join(cfg['archive']['output_dir'], psql_dump_fn)
         logger.info('Export {survey} to {fn}'.format(survey=survey_name,
                                                      fn=psql_dump_fn))
         create_psql_copy_table(source_db, 'mobile_users', survey_id, survey_name)
@@ -237,7 +245,7 @@ def main():
 
         # step 5: archive inactive surveys to .csv                 
         csv_dir_fn = '{survey}-csv'.format(survey=survey_name)
-        csv_dir = os.path.join(cfg['output_dir'], csv_dir_fn)
+        csv_dir = os.path.join(cfg['archive']['output_dir'], csv_dir_fn)
         logger.info('Export {survey} as .csv files to {dir}'.format(survey=survey_name,
                                                                     dir=csv_dir))
         if os.path.exists(csv_dir):
@@ -278,10 +286,12 @@ def main():
 
         # step 8: delete backed-up survey rows and relevant indexes from database
         logger.info('Delete archived survey records from source database')
-        if cfg['debug'] is False:
+        if cfg['delete'] is True:
             source_db.delete_survey(survey_id)
-        else:
-            break
+
+    # early termination for one-off survey name exports
+    if cfg['archive']['type'] == 'survey_name':
+        return
 
     # step 9: record active surveys information in exports db
     logger.info('Record active surveys information in exports db')
@@ -300,8 +310,10 @@ def main():
     exports_db.upsert_many('active', active_cols, active_rows)
 
     # step 10: push newly created archives to s3
-    logger.info('Push .zip archives to S3 cold storage')
-    cold_storage.push_archives_to_s3(cfg)
+    logger.info('Push .zip archives to S3 cold storage: {status}'.format(
+        status=cfg['s3']['enabled']))
+    if cfg['s3']['enabled']:
+        cold_storage.push_archives_to_s3(cfg)
 
     # step 11: generate archive status webpage
     logger.info('Generate webpage with exports status table')

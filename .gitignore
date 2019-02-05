@@ -5,3 +5,4 @@ archiver/config.json
 archiver/exports.sqlite
 www/status.html
 cold-storage/temp/
+.vscode

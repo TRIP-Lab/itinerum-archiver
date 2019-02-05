@@ -81,7 +81,7 @@ class PostgreSQLDatabase(object):
         )
         self._query(sql)
         columns = []
-        for name, dtype, _ in self._db_cur.fetchall():
+        for name, dtype, max_length in self._db_cur.fetchall():
             sqlite_dtype = POSTGRES_SQLITE_TYPES[dtype]
             columns.append((name, sqlite_dtype))
         return columns
@@ -107,50 +107,6 @@ class ItinerumDatabase(PostgreSQLDatabase):
     def __init__(self, host, dbname, port, user, password):
         super().__init__(host, dbname, port, user, password)
 
-    def delete_survey(self, survey_id):
-        # delete from tables progressively even though CASCADE is in place
-        # to less load while dropping from each table individually
-        
-        # delete mobile data
-        sql1 = '''DELETE FROM mobile_coordinates WHERE survey_id={id}'''.format(
-            id=survey_id)
-        self._query(sql1)
-
-        sql2 = '''DELETE FROM mobile_prompt_responses WHERE survey_id={id}'''.format(
-            id=survey_id)
-        self._query(sql2)
-
-        sql3 = '''DELETE FROM mobile_cancelled_prompt_responses WHERE survey_id={id}'''.format(
-            id=survey_id)
-        self._query(sql3)
-
-        sql4 = '''DELETE FROM mobile_users WHERE survey_id={id}'''.format(
-            id=survey_id)
-        self._query(sql4)
-
-        # delete dashboard data
-        sql5 = '''
-            DELETE FROM tokens_password_reset
-            WHERE web_user_id IN (
-                SELECT id
-                FROM web_users
-                WHERE survey_id={id}
-            )
-        '''.format(
-            id=survey_id
-        )
-        self._query(sql5)
-
-        sql6 = '''DELETE FROM surveys WHERE id={id};'''.format(
-            id=survey_id)
-        self._query(sql6)
-
-        multi_idx_name = 'survey{id}_multi_idx'.format(id=survey_id)
-        sql7 = '''DROP INDEX {name};'''.format(name=multi_idx_name)
-        self._query(sql7)
-
-        self._db_conn.commit()
-
 
     def end_time(self, survey_id):
         sql = '''
@@ -173,7 +129,7 @@ class ItinerumDatabase(PostgreSQLDatabase):
             end = None
         return end
 
-    def fetch_coordinates(self, survey_id):
+    def fetch_coordinates(self, mobile_ids):
         sql = '''SELECT mobile_users.uuid, mobile_coordinates.latitude, mobile_coordinates.longitude,
                         mobile_coordinates.altitude, mobile_coordinates.speed, mobile_coordinates.direction,
                         mobile_coordinates.h_accuracy, mobile_coordinates.v_accuracy, mobile_coordinates.acceleration_x,
@@ -182,11 +138,13 @@ class ItinerumDatabase(PostgreSQLDatabase):
                         DATE_PART('epoch', mobile_coordinates.timestamp)::integer AS timestamp_epoch
                  FROM mobile_coordinates
                  JOIN mobile_users ON (mobile_coordinates.mobile_id=mobile_users.id)
-                 WHERE mobile_coordinates.survey_id={};'''.format(survey_id)
+                 WHERE mobile_coordinates.mobile_id IN ({ids});'''.format(
+            ids=','.join([str(_id) for _id in mobile_ids])
+        )
         self._query(sql)
         return self._db_cur.fetchall()
 
-    def fetch_cancelled_prompt_responses(self, survey_id):
+    def fetch_cancelled_prompt_responses(self, mobile_ids):
         sql = '''SELECT mobile_users.uuid, mobile_cancelled_prompt_responses.prompt_uuid,
                         mobile_cancelled_prompt_responses.latitude, mobile_cancelled_prompt_responses.longitude,
                         mobile_cancelled_prompt_responses.displayed_at AS "displayed_at_UTC",
@@ -196,8 +154,10 @@ class ItinerumDatabase(PostgreSQLDatabase):
                         mobile_cancelled_prompt_responses.is_travelling
                  FROM mobile_cancelled_prompt_responses
                  JOIN mobile_users ON (mobile_cancelled_prompt_responses.mobile_id=mobile_users.id)
-                 WHERE mobile_cancelled_prompt_responses.survey_id={}
-                 ORDER BY mobile_cancelled_prompt_responses.id;'''.format(survey_id)
+                 WHERE mobile_users.id IN ({ids})
+                 ORDER BY mobile_cancelled_prompt_responses.id;'''.format(
+            ids=','.join([str(_id) for _id in mobile_ids])
+        )
         self._query(sql)
         return self._db_cur.fetchall()
 
@@ -213,16 +173,18 @@ class ItinerumDatabase(PostgreSQLDatabase):
         self._query(sql)
         return self._db_cur.fetchall()
 
-    def fetch_survey_responses(self, survey_id):
+    def fetch_survey_responses(self, mobile_ids):
         sql = '''SELECT *
                  FROM mobile_survey_responses
                  JOIN mobile_users ON mobile_survey_responses.mobile_id=mobile_users.id
-                 WHERE mobile_users.survey_id={}
-                 ORDER BY mobile_users.created_at;'''.format(survey_id)
+                 WHERE mobile_users.id IN ({ids})
+                 ORDER BY mobile_users.created_at;'''.format(
+            ids=','.join([str(_id) for _id in mobile_ids])
+        )
         self._query(sql)
         return self._db_cur.fetchall()
 
-    def fetch_prompt_responses(self, survey_id):
+    def fetch_prompt_responses(self, mobile_ids):
         sql = '''SELECT mobile_users.uuid, mobile_prompt_responses.prompt_uuid, mobile_prompt_responses.response,
                         mobile_prompt_responses.latitude, mobile_prompt_responses.longitude, 
                         mobile_prompt_responses.displayed_at AS "displayed_at_UTC",
@@ -233,10 +195,18 @@ class ItinerumDatabase(PostgreSQLDatabase):
                         DATE_PART('epoch', mobile_prompt_responses.edited_at)::integer AS edited_at_epoch
                  FROM mobile_prompt_responses
                  JOIN mobile_users ON (mobile_prompt_responses.mobile_id=mobile_users.id)
-                 WHERE mobile_prompt_responses.survey_id={}
-                 ORDER BY mobile_prompt_responses.displayed_at, mobile_prompt_responses.prompt_uuid, mobile_prompt_responses.prompt_num;'''.format(survey_id)
+                 WHERE mobile_users.id IN ({ids})
+                 ORDER BY mobile_prompt_responses.displayed_at, mobile_prompt_responses.prompt_uuid, mobile_prompt_responses.prompt_num;'''.format(
+            ids=','.join([str(_id) for _id in mobile_ids])
+        )
         self._query(sql)
         return self._db_cur.fetchall()
+
+    def get_survey_id(self, survey_name):
+        sql = '''SELECT id FROM surveys WHERE name ILIKE '{name}';'''.format(name=survey_name)
+        self._query(sql)
+        _id, = self._db_cur.fetchone()
+        return _id
 
     def latest_signups_by_survey(self):
         sql = '''
@@ -251,40 +221,46 @@ class ItinerumDatabase(PostgreSQLDatabase):
         self._query(sql)
         return self._db_cur.fetchall()
 
-    def select_all(self, table_name, survey_id, json_cols=None, float_cols=None):
-        offset = 0
-        chunk_size = 500000
+    def latest_signups_in_survey(self, survey_name, cutoff):
+        sql = '''
+            SELECT mobile_users.id AS mobile_id
+            FROM mobile_users
+            JOIN surveys ON mobile_users.survey_id = surveys.id
+            WHERE mobile_users.created_at >= '{cutoff}'
+            AND surveys.name ILIKE '{survey_name}';
+        '''.format(
+            survey_name=survey_name,
+            cutoff=cutoff
+        )
+        self._query(sql)
+        mobile_ids = [_id for _id, in self._db_cur.fetchall()]
+        return mobile_ids
+
+    def select_all(self, table_name, mobile_ids, json_cols=None, float_cols=None):
+        if table_name == 'mobile_users':
+            id_col = 'id'
+        else:
+            id_col = 'mobile_id'
+
         sql = '''
             SELECT *
             FROM {table}
-            WHERE survey_id = {id}
-            AND id > {offset}
-            ORDER BY id
-            LIMIT {chunk_size};
-        '''
-        last_offset = -1
-        while True:
-            slice_sql = sql.format(
-                table=table_name,
-                id=survey_id,
-                offset=offset,
-                chunk_size=chunk_size
-            )
-            self._query(slice_sql)
-            for row in self._db_cur.fetchall():
-                offset = row['id']
-                if json_cols:
-                    for col in json_cols:
-                        row[col] = json.dumps(row[col])
-                if float_cols:
-                    for col in float_cols:
-                        if row[col] is not None:
-                            row[col] = float(row[col])
-                yield row
-
-            if offset == last_offset:
-                break
-            last_offset = offset
+            WHERE {col} IN ({ids});
+        '''.format(
+            table=table_name,
+            col=id_col,
+            ids=','.join([str(_id) for _id in mobile_ids])
+        )
+        self._query(sql)
+        for row in self._db_cur.fetchall():
+            if json_cols:
+                for col in json_cols:
+                    row[col] = json.dumps(row[col])
+            if float_cols:
+                for col in float_cols:
+                    if row[col] is not None:
+                        row[col] = float(row[col])
+            yield row
 
     def start_time(self, survey_id):
         sql = '''

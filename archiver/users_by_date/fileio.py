@@ -27,31 +27,6 @@ def write_csv(fp, header, rows):
             writer.writerows(rows)
 
 
-def dump_psql_copy_tables(fp, survey_name, *args, **kwargs):
-    tables = ['mobile_users',
-              'mobile_coordinates',
-              'mobile_prompt_responses',
-              'mobile_cancelled_prompt_responses']
-    temp_tables = ['temp_{table}_{survey}'.format(table=t, survey=survey_name)
-                   for t in tables]
-
-    with gzip.open(fp, 'wb') as dump_f:
-        def _preprocesser(line):
-            for idx, table in enumerate(tables):
-                line = line.replace(temp_tables[idx], table)
-            dump_f.write(line.encode())
-
-        pg_dump('-h', kwargs['host'],
-                '-U', kwargs['user'],
-                '-p', kwargs['port'],
-                '-t', temp_tables[0],
-                '-t', temp_tables[1],
-                '-t', temp_tables[2],
-                '-t', temp_tables[3],
-                kwargs['dbname'],
-                _out=_preprocesser)
-
-
 def create_archive(fp_or_dir):
     if os.path.isfile(fp_or_dir):
         fp = fp_or_dir
@@ -108,16 +83,5 @@ class SQLiteDatabase(object):
             vals=', '.join(['?'] * len(columns))
         )
 
-        chunk = []
-        chunk_size = 100000
-        i = 0
-        for row in rows:
-            chunk.append(row)
-            if len(chunk) == chunk_size:
-                print('Inserting row #{start} to #{end}...'.format(start=i*chunk_size, end=(i+1)*chunk_size))
-                i += 1
-                self._db_cur.executemany(sql, chunk)
-                self._db_conn.commit()
-                chunk = []
-        self._db_cur.executemany(sql, chunk)
+        self._db_cur.executemany(sql, rows)
         self._db_conn.commit()

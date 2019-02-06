@@ -321,7 +321,7 @@ def main():
     # step 10: push newly created archives to s3
     logger.info('Push .zip archives to S3 cold storage: {status}'.format(
         status=cfg['s3']['enabled']))
-    if cfg['s3']['enabled']:
+    if cfg['s3']['enabled'] is True:
         cold_storage.push_archives_to_s3(cfg)
 
     # step 11: generate archive status webpage
@@ -338,7 +338,7 @@ def main():
 
     # step 13: vacuum database to reclaim disk space
     logger.info('Vacuum database to free space from deleted records')
-    if cfg['vacuum']:
+    if cfg['vacuum'] is True:
         source_db.vacuum()
 
 if __name__ == '__main__':

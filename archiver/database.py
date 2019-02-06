@@ -174,17 +174,36 @@ class ItinerumDatabase(PostgreSQLDatabase):
         return end
 
     def fetch_coordinates(self, survey_id):
-        sql = '''SELECT mobile_users.uuid, mobile_coordinates.latitude, mobile_coordinates.longitude,
+        offset = 0
+        chunk_size = 500000
+        sql = '''SELECT mobile_coordinates.id, mobile_coordinates.mobile_id, mobile_coordinates.latitude, mobile_coordinates.longitude,
                         mobile_coordinates.altitude, mobile_coordinates.speed, mobile_coordinates.direction,
                         mobile_coordinates.h_accuracy, mobile_coordinates.v_accuracy, mobile_coordinates.acceleration_x,
                         mobile_coordinates.acceleration_y, mobile_coordinates.acceleration_z, mobile_coordinates.mode_detected,
                         mobile_coordinates.point_type, mobile_coordinates.timestamp AS "timestamp_UTC",
                         DATE_PART('epoch', mobile_coordinates.timestamp)::integer AS timestamp_epoch
                  FROM mobile_coordinates
-                 JOIN mobile_users ON (mobile_coordinates.mobile_id=mobile_users.id)
-                 WHERE mobile_coordinates.survey_id={};'''.format(survey_id)
-        self._query(sql)
-        return self._db_cur.fetchall()
+                 WHERE mobile_coordinates.survey_id={survey_id}
+                 AND id >= {offset}
+                 ORDER BY id
+                 LIMIT {chunk_size};'''
+
+        last_offset = -1
+        while True:
+            slice_sql = sql.format(
+                survey_id=survey_id,
+                offset=offset,
+                chunk_size=chunk_size
+            )
+            self._query(slice_sql)
+            for row in self._db_cur.fetchall():
+                offset = row['id']
+                yield row
+
+            if offset == last_offset:
+                break
+            last_offset = offset
+
 
     def fetch_cancelled_prompt_responses(self, survey_id):
         sql = '''SELECT mobile_users.uuid, mobile_cancelled_prompt_responses.prompt_uuid,
@@ -304,6 +323,13 @@ class ItinerumDatabase(PostgreSQLDatabase):
         except TypeError:
             start = None
         return start
+    
+    def uuids(self, survey_id):
+        sql = '''SELECT id, uuid FROM mobile_users WHERE survey_id={id};'''.format(
+            id=survey_id)
+        self._query(sql)
+        lookup = {id: uuid for id, uuid in self._db_cur.fetchall()}
+        return lookup
 
 
 class ExportsDatabase(object):

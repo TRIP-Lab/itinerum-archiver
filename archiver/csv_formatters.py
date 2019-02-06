@@ -105,6 +105,7 @@ def group_prompt_responses(prompts):
         prompts_by_displayed_at.setdefault(p['displayed_at_UTC'], []).append(p)
 
     # get the grouped responses by `displayed_at_UTC` and assign a prompt number
+    # TODO: does this group, upgroup and re-group? double-check this.
     labeled_prompts = []
     for displayed_at, prompt_group in sorted(prompts_by_displayed_at.items()):
         by_displayed_at = {}

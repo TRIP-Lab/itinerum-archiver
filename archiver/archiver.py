@@ -105,11 +105,14 @@ def dump_csv_coordinates(source_db, csv_dir, survey_id, survey_name):
               'h_accuracy', 'v_accuracy', 'acceleration_x', 'acceleration_y', 'acceleration_z',
               'mode_detected', 'point_type', 'timestamp_UTC', 'timestamp_epoch']
     coordinates = source_db.fetch_coordinates(survey_id)
+    uuid_lookup = source_db.uuids(survey_id)
     csv_rows = []
     last_row = None  # filters points recorded as duplicates in database
     for point in coordinates:
+        point = dict(point)
         if int(point['latitude']) == 0 and int(point['longitude'] == 0):
             continue
+        point['uuid'] = uuid_lookup[point['mobile_id']]
         row = csv_formatters.coordinate_row(header, point)
         if row != last_row:
             csv_rows.append(row)

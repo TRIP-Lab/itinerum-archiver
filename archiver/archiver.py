@@ -39,7 +39,10 @@ def filter_inactive_surveys(cfg, surveys_latest_activity):
         return filter(lambda row: row['last_created_at'] < cfg['archive']['inactivity_date'],
                       surveys_latest_activity)
     if cfg['archive']['type'] == 'survey_name':
-        return filter(lambda row: row['name'] == cfg['archive']['survey_name'],
+        survey_names = cfg['archive']['survey_name']
+        if isinstance(survey_names, str):
+            survey_names = [survey_names]
+        return filter(lambda row: row['name'] in cfg['archive']['survey_name'],
                       surveys_latest_activity)
 
 

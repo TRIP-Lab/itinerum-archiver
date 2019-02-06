@@ -27,6 +27,14 @@ def write_csv(fp, header, rows):
             writer.writerows(rows)
 
 
+def write_coordinates_csv(fp, header, rows):
+    with open(fp, 'a') as csv_f:
+        writer = csv.writer(csv_f)
+        if header:
+            writer.writerow(header)
+        writer.writerows(rows)
+
+
 def dump_psql_copy_tables(fp, survey_name, *args, **kwargs):
     tables = ['mobile_users',
               'mobile_coordinates',

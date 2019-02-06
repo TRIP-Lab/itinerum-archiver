@@ -111,6 +111,7 @@ def dump_csv_coordinates(source_db, csv_dir, survey_id, survey_name):
     uuid_lookup = source_db.uuids(survey_id)
     csv_rows = []
     last_row = None  # filters points recorded as duplicates in database
+    csv_header = header
     for point in coordinates:
         point = dict(point)
         if int(point['latitude']) == 0 and int(point['longitude'] == 0):
@@ -121,9 +122,14 @@ def dump_csv_coordinates(source_db, csv_dir, survey_id, survey_name):
             csv_rows.append(row)
         last_row = row    
 
+        if len(csv_rows) == 50000:
+            fp = os.path.join(csv_dir, 'coordinates.csv')
+            fileio.write_coordinates_csv(fp, csv_header, csv_rows)
+            csv_header = None
+            csv_rows = []
     fp = os.path.join(csv_dir, 'coordinates.csv')
-    fileio.write_csv(fp, header, csv_rows)
-
+    fileio.write_coordinates_csv(fp, csv_header, csv_rows)
+        
 
 def dump_csv_prompts(source_db, csv_dir, survey_id, survey_name):
     header = ['uuid', 'prompt_uuid', 'prompt_num', 'response', 'displayed_at_UTC',
@@ -297,19 +303,20 @@ def main():
 
     # step 9: record active surveys information in exports db
     logger.info('Record active surveys information in exports db')
-    active_surveys = filter(lambda row: row['last_created_at'] >= cfg['inactivity_date'],
-                            surveys_latest_activity)
-    active_cols = ['survey_name', 'survey_start', 'survey_last_update']
-    active_rows = []
-    for survey_id, survey_name, _ in active_surveys:
-        start_time = source_db.start_time(survey_id)
-        if start_time:
-            start_time = int(start_time.timestamp())
-        end_time = source_db.end_time(survey_id)
-        if end_time:
-            end_time = int(end_time.timestamp())
-        active_rows.append((survey_name, start_time, end_time))
-    exports_db.upsert_many('active', active_cols, active_rows)
+    if cfg['archive']['type'] == 'inactivity_date':
+        active_surveys = filter(lambda row: row['last_created_at'] >= cfg['archive']['inactivity_date'],
+                                surveys_latest_activity)
+        active_cols = ['survey_name', 'survey_start', 'survey_last_update']
+        active_rows = []
+        for survey_id, survey_name, _ in active_surveys:
+            start_time = source_db.start_time(survey_id)
+            if start_time:
+                start_time = int(start_time.timestamp())
+            end_time = source_db.end_time(survey_id)
+            if end_time:
+                end_time = int(end_time.timestamp())
+            active_rows.append((survey_name, start_time, end_time))
+        exports_db.upsert_many('active', active_cols, active_rows)
 
     # step 10: push newly created archives to s3
     logger.info('Push .zip archives to S3 cold storage: {status}'.format(
@@ -331,7 +338,7 @@ def main():
 
     # step 13: vacuum database to reclaim disk space
     logger.info('Vacuum database to free space from deleted records')
-    if cfg['debug'] is False:
+    if cfg['vacuum']:
         source_db.vacuum()
 
 if __name__ == '__main__':

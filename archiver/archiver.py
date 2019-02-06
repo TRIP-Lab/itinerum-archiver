@@ -292,10 +292,6 @@ def main():
         if cfg['delete'] is True:
             source_db.delete_survey(survey_id)
 
-    # early termination for one-off survey name exports
-    if cfg['archive']['type'] == 'survey_name':
-        return
-
     # step 9: record active surveys information in exports db
     logger.info('Record active surveys information in exports db')
     active_surveys = filter(lambda row: row['last_created_at'] >= cfg['inactivity_date'],
